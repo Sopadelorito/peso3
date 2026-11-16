@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progreso | Gym Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --bg:#07142f; --panel:#122650; --panel2:#0b1c3b;
+  --line:#294579; --text:#f2f6ff; --muted:#9eb2d8;
+  --blue:#3978ff; --cyan:#54d6ff; --green:#65e6b0;
+  --red:#ff718c;
+}
+* {box-sizing:border-box}
+body {
+  margin:0; padding:25px; color:var(--text);
+  background:radial-gradient(ellipse at 10% 0%,#2968eb40,transparent 38%),var(--bg);
+  font:15px 'DM Sans',sans-serif;
+}
+button,input,select {font:inherit}
+button {cursor:pointer}
+header {max-width:1400px;margin:0 auto 25px}
+header h1 {font:700 2.5rem 'Space Grotesk';margin:0}
+header p {color:var(--muted);margin:5px 0}
+.tabs {
+  display:flex;gap:8px;padding:6px;width:max-content;
+  margin:0 auto 24px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:13px;
+}
+.tab {
+  padding:12px 20px;border:0;border-radius:9px;
+  color:var(--muted);background:transparent;font-weight:700;
+}
+.tab.active {background:var(--blue);color:white}
+.layout {
+  max-width:1400px;margin:auto;
+  display:grid;grid-template-columns:340px 1fr;gap:20px;
+  align-items:start;
+}
+.panel,.food-panel {
+  background:linear-gradient(145deg,#152b56,#0d1e3f);
+  border:1px solid var(--line);border-radius:17px;
+  padding:22px;box-shadow:0 15px 35px #020b1e44;
+}
+h2 {font:700 1.3rem 'Space Grotesk';margin:0 0 18px}
+h3 {font:700 1rem 'Space Grotesk'}
+label {display:block;color:#dce7ff;font-weight:700;margin:13px 0 6px}
+input,select {
+  width:100%;padding:12px;border:1px solid #35558c;
+  border-radius:9px;background:#091a3a;color:white;
+  outline:none;min-height:43px;
+}
+input:focus,select:focus {border-color:var(--cyan);box-shadow:0 0 0 3px #54d6ff20}
+.grid {display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.add {display:flex;gap:8px;margin:8px 0 15px}
+.add input {flex:1;min-width:0}
+button.action {
+  border:1px solid #4167a7;border-radius:9px;
+  background:#1a376b;color:white;padding:10px 14px;font-weight:700;
+}
+button.primary {
+  width:100%;margin-top:16px;border:0;border-radius:10px;
+  background:linear-gradient(135deg,#4384ff,#2459e4);
+  color:white;padding:13px;font-weight:800;
+}
+button:hover {filter:brightness(1.15)}
+.help {font-size:.85rem;line-height:1.5;color:var(--muted)}
+.status {color:var(--green);font-size:.88rem;min-height:20px}
+.status.error {color:var(--red)}
+.hint {padding:12px;background:#0b1d40;border-left:3px solid var(--cyan);color:#dce7ff}
+.progress {display:grid;gap:18px;min-width:0}
+.stats {display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat {
+  padding:17px;background:linear-gradient(145deg,#17366e,#102650);
+  border:1px solid #31599b;border-radius:14px;min-width:0;
+}
+.stat .number {font:700 1.7rem 'Space Grotesk';color:white}
+.stat .unit {color:var(--cyan);font-size:.85rem}
+.stat .caption {font-weight:700;margin-top:6px}
+.stat small {display:block;color:var(--muted);margin-top:4px}
+.row {display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.row h2 {margin:0}
+.metric {min-width:200px;margin:0}
+canvas {width:100%;height:260px;display:block;margin-top:15px}
+.scroll {overflow-x:auto}
+table {width:100%;border-collapse:collapse;font-size:.9rem}
+th,td {padding:12px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th {color:var(--muted);font-size:.8rem}
+td.num,th.num {text-align:right}
+.delete {color:var(--red);background:#1a376b;border:1px solid #4167a7;border-radius:8px;padding:7px 12px;font-weight:700}
+.empty {color:var(--muted);padding:15px 0}
+.ghost {width:100%;margin-top:12px;background:transparent;border:1px solid #4167a7;color:white;border-radius:9px;padding:12px;font-weight:700}
+.food-panel {max-width:1100px;margin:auto}
+.eyebrow {color:var(--cyan);letter-spacing:2px;font-size:.75rem;font-weight:800}
+.muted {color:var(--muted)}
+.food-search {display:grid;grid-template-columns:1fr 150px;gap:10px;margin:20px 0}
+.food-results {display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.food-card {
+  display:grid;grid-template-columns:75px 1fr;gap:13px;
+  background:var(--panel2);border:1px solid var(--line);
+  border-radius:13px;padding:14px;
+}
+.food-card img,.placeholder {width:75px;height:75px;object-fit:contain;background:white;border-radius:9px}
+.food-card h3 {margin:0 0 4px}
+.food-brand,.macros {font-size:.8rem;color:var(--muted)}
+.kcal {color:var(--cyan);font:700 1.2rem 'Space Grotesk';margin:7px 0}
+.portion {display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.portion input {width:70px;min-height:32px;padding:5px}
+.portion strong {color:white}
+.note {color:var(--muted);font-size:.82rem;margin-top:20px}
+[hidden] {display:none!important}
+@media(max-width:1000px) {
+  .layout {grid-template-columns:1fr}
+  .stats {grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px) {
+  body {padding:14px}
+  header h1 {font-size:2rem}
+  .tabs {width:100%}
+  .tab {flex:1;padding:10px 5px;font-size:.85rem}
+  .food-results,.food-search {grid-template-columns:1fr}
+  .panel,.food-panel {padding:16px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PROGRESO.</h1>
+  <p>Controlá tu entrenamiento y seguí tu evolución.</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="training">💪 Entrenamiento</button>
+  <button class="tab" data-tab="food">🥗 Alimentación</button>
+</nav>
+
+<main class="layout" id="trainingPanel">
+  <section class="panel">
+    <h2>Registrar una serie</h2>
+
+    <label for="exercise">Ejercicio</label>
+    <select id="exercise"></select>
+
+    <div class="add">
+      <input id="newExercise" placeholder="Nuevo ejercicio">
+      <button class="action" id="addExercise" type="button">+ Añadir</button>
+    </div>
+
+    <form id="form">
+      <div class="grid">
+        <div>
+          <label for="date">Fecha</label>
+          <input type="date" id="date" required>
+        </div>
+        <div>
+          <label for="weight">Peso (kg)</label>
+          <input type="number" id="weight" min="0" step=".25" required>
+        </div>
+        <div>
+          <label for="reps">Repeticiones</label>
+          <input type="number" id="reps" min="1" required>
+        </div>
+        <div>
+          <label for="rir">RIR</label>
+          <input type="number" id="rir" min="0" max="10">
+        </div>
+        <div>
+          <label for="rest">Descanso (seg)</label>
+          <input type="number" id="rest" min="0">
+        </div>
+      </div>
+
+      <label for="note">Notas (opcional)</label>
+      <input id="note" maxlength="120" placeholder="Ej.: buena técnica, última repetición difícil">
+
+      <button class="primary" type="submit">Guardar serie</button>
+      <p class="status" id="status"></p>
+    </form>
+
+    <p class="help">RIR indica cuántas repeticiones más podrías haber hecho antes de llegar al fallo. El 1RM es una estimación de tu fuerza máxima.</p>
+    <p class="hint" id="hint"></p>
+    <button class="ghost" id="export">⬇ Descargar historial CSV</button>
+  </section>
+
+  <section class="progress">
+    <div class="stats" id="stats"></div>
+
+    <div class="panel">
+      <div class="row">
+        <h2>Evolución</h2>
+        <label class="metric">Ver progreso
+          <select id="metric">
+            <option value="e1rm">1RM estimado</option>
+            <option value="maxW">Peso máximo</option>
+            <option value="volume">Volumen total</option>
+          </select>
+        </label>
+      </div>
+      <canvas id="chart"></canvas>
+      <p class="help">Los puntos muestran tus resultados por sesión. El punto rosa indica un nuevo récord.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Historial de sesiones</h2>
+      <div class="scroll"><table id="sessions"></table></div>
+    </div>
+
+    <div class="panel">
+      <h2>Series registradas</h2>
+      <p class="help">Podés borrar una serie directamente con el botón correspondiente.</p>
+      <div class="scroll"><table id="sets"></table></div>
+    </div>
+  </section>
+</main>
+
+<section class="food-panel" id="foodPanel" hidden>
+  <p class="eyebrow">NUTRICIÓN · OPEN FOOD FACTS</p>
+  <h2>Buscador de alimentos</h2>
+  <p class="muted">Buscá un producto y consultá su información nutricional.</p>
+
+  <form id="foodSearch" class="food-search">
+    <input id="foodQuery" placeholder="Ej.: banana, avena, arroz..." minlength="2" required>
+    <button class="primary" type="submit" style="margin:0">Buscar alimento</button>
+  </form>
+
+  <p class="status" id="foodStatus">Escribí un alimento para comenzar.</p>
+  <div class="food-results" id="foodResults"></div>
+  <p class="note">La información nutricional depende de los datos publicados por cada producto. Comprobá siempre el envase.</p>
+</section>
+
+<script>
+(() => {
+'use strict';
+
+const $ = id => document.getElementById(id);
+const KEY = 'gym-series-v1';
+const EXKEY = 'gym-ejercicios-v1';
+const BASE = ['Press de banca','Sentadilla','Peso muerto','Press militar','Remo con barra','Dominadas','Press inclinado con mancuernas','Prensa de piernas','Hip thrust','Curl de bíceps','Extensión de tríceps'];
+
+function read(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+  catch { return fallback; }
+}
+
+let sets = read(KEY, []);
+let custom = read(EXKEY, []);
+
+const save = () => {
+  localStorage.setItem(KEY, JSON.stringify(sets));
+  localStorage.setItem(EXKEY, JSON.stringify(custom));
+};
+
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const fmt = n => Number(n).toLocaleString('es-AR',{maximumFractionDigits:1});
+const e1rm = (w,r) => r <= 1 ? w : w * (1+r/30);
+const dmy = d => d.split('-').reverse().join('/');
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const id = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
+
+function fillExercises(selected) {
+  $('exercise').innerHTML = [...BASE,...custom].map(x=>`<option>${esc(x)}</option>`).join('');
+  if(selected) $('exercise').value=selected;
+}
+
+function sessionsOf(ex) {
+  const groups={};
+  sets.filter(s=>s.exercise===ex).forEach(s=>(groups[s.date] ||= []).push(s));
+  return Object.keys(groups).sort().map(date=>{
+    const list=groups[date];
+    const top=list.reduce((a,b)=>e1rm(a.weight,a.reps)>e1rm(b.weight,b.reps)?a:b);
+    return {
+      date,list,top,count:list.length,
+      e1rm:e1rm(top.weight,top.reps),
+      maxW:Math.max(...list.map(s=>s.weight)),
+      volume:list.reduce((t,s)=>t+s.weight*s.reps,0)
+    };
+  });
+}
+
+function render() {
+  const ex=$('exercise').value;
+  const ss=sessionsOf(ex);
+  const stats=$('stats');
+
+  if(!ss.length) {
+    stats.innerHTML='';
+    $('hint').textContent='Todavía no registraste sesiones de este ejercicio. ¡Empezá hoy!';
+  } else {
+    const last=ss[ss.length-1];
+    const best=ss.reduce((a,b)=>b.e1rm>a.e1rm?b:a);
+    const max=Math.max(...ss.map(s=>s.maxW));
+    stats.innerHTML=[
+      [fmt(best.e1rm),'kg','Mejor 1RM','Récord estimado'],
+      [fmt(max),'kg','Peso máximo','Mayor peso registrado'],
+      [fmt(last.volume),'kg','Volumen reciente','Última sesión'],
+      [ss.length,'','Sesiones','Entrenamientos registrados']
+    ].map(x=>`<div class="stat"><div class="number">${x[0]} <span class="unit">${x[1]}</span></div><div class="caption">${x[2]}</div><small>${x[3]}</small></div>`).join('');
+    $('hint').textContent=`Última sesión (${dmy(last.date)}): ${last.list.map(s=>`${fmt(s.weight)} kg × ${s.reps}`).join(', ')}.`;
+  }
+
+  drawChart(ss);
+  renderSessions(ss);
+  renderSets(ex);
+}
+
+function drawChart(ss) {
+  const c=$('chart'),ctx=c.getContext('2d');
+  const w=c.clientWidth,h=260,dpr=window.devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  const style=getComputedStyle(document.documentElement);
+  const color=v=>style.getPropertyValue(v).trim();
+
+  if(!ss.length) {
+    ctx.fillStyle=color('--muted');ctx.textAlign='center';
+    ctx.fillText('Guardá sesiones para ver tu progreso',w/2,h/2);
+    return;
+  }
+
+  const key=$('metric').value;
+  const values=ss.map(s=>s[key]);
+  let min=Math.min(...values),max=Math.max(...values);
+  if(min===max){min-=1;max+=1}
+  const pad={l:48,r:15,t:18,b:30};
+  const x=i=>ss.length===1?w/2:pad.l+i*(w-pad.l-pad.r)/(ss.length-1);
+  const y=v=>pad.t+(h-pad.t-pad.b)*(1-(v-min)/(max-min));
+
+  ctx.strokeStyle=color('--line');
+  ctx.fillStyle=color('--muted');
+  ctx.font='12px DM Sans';
+  for(let i=0;i<=4;i++){
+    const v=min+(max-min)*i/4,yy=y(v);
+    ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+    ctx.textAlign='right';ctx.fillText(fmt(v),pad.l-7,yy+4);
+  }
+
+  ctx.textAlign='center';
+  const step=Math.ceil(ss.length/6);
+  ss.forEach((s,i)=>{
+    if(i%step===0||i===ss.length-1)ctx.fillText(dmy(s.date).slice(0,5),x(i),h-7);
+  });
+
+  ctx.beginPath();
+  values.forEach((v,i)=>i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v)));
+  ctx.strokeStyle=color('--blue');ctx.lineWidth=3;ctx.stroke();
+
+  let record=-Infinity;
+  values.forEach((v,i)=>{
+    const pr=i>0&&v>record;record=Math.max(record,v);
+    ctx.beginPath();ctx.arc(x(i),y(v),pr?7:5,0,Math.PI*2);
+    ctx.fillStyle=pr?color('--red'):color('--panel');
+    ctx.fill();ctx.lineWidth=3;
+    ctx.strokeStyle=pr?color('--red'):color('--blue');ctx.stroke();
+  });
+}
+
+function renderSessions(ss) {
+  if(!ss.length) {
+    $('sessions').innerHTML='<tr><td class="empty">No hay sesiones para este ejercicio.</td></tr>';
+    return;
+  }
+  $('sessions').innerHTML=`<thead><tr><th>Fecha</th><th>Series</th><th>Mejor serie</th><th>1RM estimado</th><th>Volumen</th></tr></thead><tbody>${
+    ss.slice().reverse().map(s=>`<tr><td>${dmy(s.date)}</td><td>${s.count}</td><td>${fmt(s.top.weight)} kg × ${s.top.reps}</td><td>${fmt(s.e1rm)} kg</td><td>${fmt(s.volume)} kg</td></tr>`).join('')
+  }</tbody>`;
+}
+
+function renderSets(ex) {
+  const list=sets.filter(s=>s.exercise===ex).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!list.length) {
+    $('sets').innerHTML='<tr><td class="empty">Todavía no hay series registradas.</td></tr>';
+    return;
+  }
+  $('sets').innerHTML=`<thead><tr><th>Fecha</th><th>Peso</th><th>Reps</th><th>RIR</th><th>Descanso</th><th>Notas</th><th>Acción</th></tr></thead><tbody>${
+    list.map(s=>`<tr><td>${dmy(s.date)}</td><td>${fmt(s.weight)} kg</td><td>${s.reps}</td><td>${s.rir??'–'}</td><td>${s.rest??'–'} s</td><td>${esc(s.note)}</td><td><button class="delete" data-delete="${esc(s.id)}">Borrar</button></td></tr>`).join('')
+  }</tbody>`;
+}
+
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const weight=Number($('weight').value),reps=Number($('reps').value);
+  if(!Number.isFinite(weight)||weight<0||!Number.isInteger(reps)||reps<1)return;
+
+  sets.push({
+    id:id(),date:$('date').value,exercise:$('exercise').value,
+    weight,reps,
+    rir:$('rir').value===''?null:Number($('rir').value),
+    rest:$('rest').value===''?null:Number($('rest').value),
+    note:$('note').value.trim()
+  });
+  save();
+  $('note').value='';
+  $('status').textContent=`✓ Serie guardada: ${fmt(weight)} kg × ${reps}`;
+  render();
+});
+
+$('sets').addEventListener('click',e=>{
+  const b=e.target.closest('[data-delete]');
+  if(!b)return;
+  // Eliminación directa, sin ventana emergente de confirmación.
+  sets=sets.filter(s=>s.id!==b.dataset.delete);
+  save();
+  render();
+});
+
+$('addExercise').addEventListener('click',()=>{
+  const name=$('newExercise').value.trim();
+  if(!name)return;
+  const existing=[...BASE,...custom].find(x=>x.toLowerCase()===name.toLowerCase());
+  if(!existing)custom.push(name);
+  save();
+  fillExercises(existing||name);
+  $('newExercise').value='';
+  render();
+});
+
+$('exercise').addEventListener('change',render);
+$('metric').addEventListener('change',()=>drawChart(sessionsOf($('exercise').value)));
+window.addEventListener('resize',()=>drawChart(sessionsOf($('exercise').value)));
+
+$('export').addEventListener('click',()=>{
+  const rows=[['Fecha','Ejercicio','Peso kg','Repeticiones','RIR','Descanso','1RM estimado','Notas']];
+  sets.forEach(s=>rows.push([s.date,s.exercise,s.weight,s.reps,s.rir??'',s.rest??'',e1rm(s.weight,s.reps).toFixed(1),s.note]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='mi-entrenamiento.csv';a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* PESTAÑAS */
+document.querySelectorAll('[data-tab]').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const food=tab.dataset.tab==='food';
+    $('trainingPanel').hidden=food;
+    $('foodPanel').hidden=!food;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));
+    if(!food)render();
+  });
+});
+
+/* BUSCADOR DE ALIMENTOS */
+const foodFmt=n=>Number(n).toLocaleString('es-AR',{maximumFractionDigits:1});
+
+function foodCard(p) {
+  const n=p.nutriments||{};
+  let kcal=Number(n['energy-kcal_100g']);
+  if(!Number.isFinite(kcal)){
+    const kj=Number(n.energy_100g);
+    kcal=Number.isFinite(kj)?kj/4.184:null;
+  }
+  const protein=Number(n.proteins_100g||0);
+  const carbs=Number(n.carbohydrates_100g||0);
+  const fat=Number(n.fat_100g||0);
+  const img=p.image_front_small_url||p.image_url;
+  return `<article class="food-card" data-kcal="${kcal===null?'':kcal}">
+    ${img?`<img src="${esc(img)}" alt="">`:'<div class="placeholder">🥗</div>'}
+    <div>
+      <h3>${esc(p.product_name||p.generic_name||'Alimento')}</h3>
+      <div class="food-brand">${esc(p.brands||'Marca no informada')}</div>
+      <div class="kcal">${kcal===null?'Sin dato':foodFmt(kcal)+' kcal'} <small>/100 g</small></div>
+      <div class="macros">Proteínas ${foodFmt(protein)} g · Carbohidratos ${foodFmt(carbs)} g · Grasas ${foodFmt(fat)} g</div>
+      <label class="portion">Porción <input class="grams" type="number" min="1" max="5000" value="100" ${kcal===null?'disabled':''}> g <strong class="portion-kcal">${kcal===null?'—':foodFmt(kcal)+' kcal'}</strong></label>
+    </div>
+  </article>`;
+}
+
+$('foodSearch').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const query=$('foodQuery').value.trim();
+  $('foodStatus').textContent='Buscando alimentos...';
+  $('foodResults').innerHTML='';
+  try {
+    const url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(query)+'&search_simple=1&action=process&json=1&page_size=16&fields=product_name,generic_name,brands,nutriments,image_front_small_url,image_url';
+    const response=await fetch(url);
+    if(!response.ok)throw new Error('Error');
+    const data=await response.json();
+    const products=(data.products||[]).filter(p=>p.product_name||p.generic_name);
+    if(!products.length){
+      $('foodStatus').textContent='No encontramos resultados. Probá con otro nombre.';
+      return;
+    }
+    $('foodResults').innerHTML=products.map(foodCard).join('');
+    $('foodStatus').textContent=`Encontramos ${products.length} productos. Valores nutricionales por 100 gramos.`;
+  } catch {
+    $('foodStatus').textContent='No se pudo conectar. Revisá tu conexión a Internet.';
+  }
+});
+
+$('foodResults').addEventListener('input',e=>{
+  if(!e.target.classList.contains('grams'))return;
+  const card=e.target.closest('.food-card');
+  const kcal=Number(card.dataset.kcal);
+  if(!Number.isFinite(kcal))return;
+  const grams=Math.max(0,Number(e.target.value)||0);
+  card.querySelector('.portion-kcal').textContent=foodFmt(kcal*grams/100)+' kcal';
+});
+
+/* INICIO */
+$('date').value=today();
+fillExercises();
+render();
+})();
+</script>
+</body>
+</html>
